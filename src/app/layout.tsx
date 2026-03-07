@@ -11,6 +11,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import {dark} from '@clerk/themes'
+import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 const inter = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -41,6 +42,7 @@ export default function RootLayout({
         className={`${inter.variable} ${plexMono.variable} antialiased`}
       >
         <ThemeProvider defaultTheme="dark" attribute="class" enableSystem disableTransitionOnChange>
+          <ConvexClientProvider>
           <header>
         <SignedOut>
           <SignInButton />
@@ -53,6 +55,7 @@ export default function RootLayout({
         </SignedIn>
         </header>
         {children}
+        </ConvexClientProvider>
         </ThemeProvider>
       </body>
     </html>
