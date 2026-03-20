@@ -5,6 +5,8 @@ import { Authenticated, AuthLoading, ConvexReactClient, Unauthenticated } from '
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import { ClerkProvider, SignInButton, SignUpButton, useAuth, UserButton } from '@clerk/nextjs'
 import { ThemeProvider } from './theme-provider'
+import Unahenticated from '@/features/auth/components/unauthenticated-view'
+import AuthLoadingView from '@/features/auth/components/auth-loading-view'
 
 if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
   throw new Error('Missing NEXT_PUBLIC_CONVEX_URL in your .env file')
@@ -22,11 +24,10 @@ export default function Providers({ children }: { children: ReactNode }) {
          {children}
       </Authenticated>
       <Unauthenticated>
-        <SignInButton/>
-        <SignUpButton/>
+          <Unahenticated/>
       </Unauthenticated>
       <AuthLoading>
-        Authenticating...
+      <AuthLoadingView/>
       </AuthLoading>
       </ThemeProvider>
     </ConvexProviderWithClerk>
