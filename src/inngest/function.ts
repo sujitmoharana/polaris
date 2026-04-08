@@ -1,7 +1,6 @@
 import { generateText } from "ai";
 import { inngest } from "./client";
 import { google } from "@ai-sdk/google";
-import { url } from "inspector";
 import { firecrawl } from "@/lib/firecrawl";
 
 const URL_REGEX = /https?:\/\/[^\s]+/g; 
@@ -33,11 +32,25 @@ export const demoGenerate = inngest.createFunction(
     console.log("prompt",prompt,"scrapcontext", scrapedContent,"finalprompt",finalprompt);
 
     await step.run("generate-text", async()=>{
-      console.log("prompt",prompt,"scrapcontext", scrapedContent);
         return await generateText({
           model: google('gemini-2.5-flash'),
           prompt: finalprompt,
+          experimental_telemetry:{
+            isEnabled:true,
+            recordInputs:true,
+            recordOutputs:true
+          }
         });  
     });
   },
 );
+
+
+export const demoError = inngest.createFunction(
+  {id:"demo-error",triggers:[{event:"demo/error"}]},
+  async ({step})=>{
+    await step.run("fail",async()=>{
+      throw new Error("Inngest error:background job failed")
+    })
+  }
+)

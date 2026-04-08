@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 
 const page = () => {
-   const projects = useQuery(api.projects.get);
+   const project = useQuery(api.projects.get);
 
    const createProject = useMutation(api.projects.create);
 
@@ -18,7 +18,7 @@ const page = () => {
 
 
      {
-      projects?.map((project) => (
+      project?.map((project) => (
         <div className="border rounded p-2 flex flex-col"  key={project._id}>
           <p>{project.name}</p>
           <p>Owner Id :{project.ownerId}</p>
