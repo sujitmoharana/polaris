@@ -20,7 +20,6 @@ export default function Providers({ children }: { children: ReactNode }) {
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <ThemeProvider defaultTheme="dark" attribute="class" enableSystem disableTransitionOnChange>
         <Authenticated>
-         <UserButton/>
          {children}
       </Authenticated>
       <Unauthenticated>

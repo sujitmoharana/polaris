@@ -2,7 +2,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { AlertCircleIcon,GlobeIcon,Loader2Icon, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FaGithub } from "react-icons/fa";
-import { useproject } from "./hooks/use-projects";
+import { useprojects } from "./hooks/use-projects";
 import { Doc } from "../../../../convex/_generated/dataModel";
 import { useState } from "react";
 
@@ -26,7 +26,7 @@ const getProjecticon =(projects:Doc<"projects">)=>{
 
 export const ProjectsCommandDialog = ({open,onOpenChange}:ProjectCommandDialogProps)=>{
      const router = useRouter();
-     const project = useproject()
+     const project = useprojects()
 
      const handleSelect = (projectId:string)=>{
                router.push(`/projects/${projectId}`);

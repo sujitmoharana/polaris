@@ -35,20 +35,21 @@ const ContinueCard = ({data}:{data:Doc<"projects">})=>{
       <span className="text-xs text-muted-foreground">
         last Updated
       </span>
-      <Button variant="outline" className="h-auto   flex items-start justify-start p-4 bg-background border rounded-none flex-col gap-2">
-         <Link href={`/projects/${data._id}`} className="group flex flex-col items-start gap-2">
+      <Button variant="outline" className="h-auto w-full   flex items-start justify-start p-4 bg-background border rounded-none  gap-2">
+         <Link href={`/projects/${data._id}`} className="group w-full flex flex-col items-start gap-2">
          <div className="flex justify-between  items-center w-full">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-start   gap-2 w-full">
+                <span className="font-medium items-center gap-2 flex  truncate text-white">
                 {getProjecticon(data)}
-                <span className="font-medium truncate text-white">
                       {data.name}
                 </span>
+                <span className="text-xs text-muted-foreground">
+            {formatTimestamp(data.updatedAt)}
+         </span>
             </div>
             <ArrowRightIcon className="w-full size-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform"/>
          </div>
-         <span className="text-xs text-muted-foreground">
-            {formatTimestamp(data.updatedAt)}
-         </span>
+         
          </Link>
       </Button>
     </div>
