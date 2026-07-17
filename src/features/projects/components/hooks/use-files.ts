@@ -19,5 +19,15 @@ export const useFolderContains =({projectId,parentId,enabled = true}:{projectId:
       return useQuery(api.file.getFolderContents,enabled?{projectId:projectId,parentId:parentId}:"skip")
 }
 
+export const useFile =(fileId:Id<"files">|null)=>{
+  return useQuery(api.file.getFile,fileId?{id:fileId}:"skip")
+}
+export const useFilePath =(fileId:Id<"files">|null)=>{
+  return useQuery(api.file.getFilePath,fileId?{id:fileId}:"skip")
+}
+export const useUpadatefile = ()=>{
+      return useMutation(api.file.updateFile)
+}
+
 
 

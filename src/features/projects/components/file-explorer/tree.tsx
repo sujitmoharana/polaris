@@ -9,6 +9,7 @@ import { Doc, Id } from "../../../../../convex/_generated/dataModel"
 import { useState } from "react"
 import TreeItemWrapper from "./tree-item-wrapper"
 import RenameInput from "./renaming-input"
+import { useEditor } from "@/features/editor/hook/use-editor"
 
 const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectId:Id<"projects">}) => {
     console.log("items",item,"level",level,"projectId",projectId);
@@ -21,12 +22,15 @@ const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectI
     const deleteFile = useDeleteFile()
     const createFile = useCreateFile()
     const createFolder = useCreateFolder()
+
+    const {openFile,closeTab,activeTabId} = useEditor(projectId)
+
     const folderContents = useFolderContains({
         projectId:projectId,
         parentId:item._id,
         enabled:item.type === "folder" && isOpen
     })
-   
+      
     const handleReaname = (newName:string)=>
     {
         setIsRenaming(false)
@@ -56,17 +60,21 @@ const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectI
     {
 
         const fileName = item.name;
+        const isActive = activeTabId === item._id
         
       if (isRenaming) {
         return(
             <RenameInput defaultValue={item.name} type="file" level={level} onSubmit={handleReaname} onCancel={()=>setIsRenaming(false)}/>
         )
       }
+      console.log("projectIs and fileId",projectId,item._id);
+      
 
         return(
-            <TreeItemWrapper item={item} level={level} isActive={false} onClick={()=>{console.log("itemfil",item);
-            }} onDoubleClick={()=>{}} onRename={()=>setIsRenaming(true)} onDelete={()=>{
+            <TreeItemWrapper item={item} level={level} isActive={isActive} onClick={()=>{openFile(item._id,{pinned:false})}} 
+            onDoubleClick={()=>{openFile(item._id,{pinned:true})}} onRename={()=>setIsRenaming(true)} onDelete={()=>{
                 //close Tab
+                closeTab(item._id)
                 deleteFile({id:item._id})
             }}>
                 <FileIcon fileName={fileName} autoAssign className="size-4"/>
@@ -76,7 +84,7 @@ const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectI
     }
 
     const folderName = item.name;
-    console.log("folderRender",folderName);
+    console.log("foldername",folderName);
     
     const folderRender = (
         <>
@@ -88,6 +96,8 @@ const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectI
         </>
     )
 
+    console.log("folderrender",folderRender);
+    console.log("foldercontents",folderContents);
     if (creating) {
         return(
             <>
@@ -99,9 +109,10 @@ const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectI
                     {folderContents === undefined && <LoadingRow level={level+1}/>}
                             <CreateInput type={creating} level={level+1} onSubmit={handleCreate} onCancel={()=>setCreating(null)}/> 
                                 {
-                            folderContents?.map((subItem)=>(
-                                <Tree item={subItem} projectId={projectId} key={subItem._id} level={level+1}/>
-                            ))
+                            folderContents?.map((subItem)=>{
+                                console.log("subitem",subItem); 
+                              return <Tree item={subItem} projectId={projectId} key={subItem._id} level={level+1}/>
+                            })
                         }
                     </>
                 )}
@@ -148,10 +159,11 @@ const Tree = ({item,level=0,projectId}:{item:Doc<"files">,level?:number,projectI
     {isOpen && (
         <>
           {folderContents === undefined && <LoadingRow level={level+1}  />}
-         
-         {folderContents?.map((subItem)=>(
-            <Tree item={subItem} key={subItem._id} projectId={projectId} level={level+1}/>
-         ))}
+         {folderContents?.map((subItem)=>{
+            console.log("items",subItem);
+            return <Tree item={subItem} key={subItem._id} projectId={projectId} level={level+1}/>
+
+         })}
 
           </>
     )}

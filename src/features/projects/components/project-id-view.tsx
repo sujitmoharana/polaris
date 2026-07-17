@@ -9,6 +9,7 @@ import { Allotment } from "allotment"
 import "allotment/dist/style.css";
 import FileExplorer from "./file-explorer"
 import { useproject } from "./hooks/use-projects"
+import EditorView from "@/features/editor/components/editor-view"
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 800;
@@ -46,7 +47,7 @@ const ProjectIdView = ({projectId}:{projectId:Id<"projects">}) => {
                    <FileExplorer projectId={projectId} />
             </Allotment.Pane>
             <Allotment.Pane >
-                   <p>Editor view</p>
+                 <EditorView projectId={projectId} />
             </Allotment.Pane>
          </Allotment>
         </div>

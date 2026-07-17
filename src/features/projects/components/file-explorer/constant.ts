@@ -5,6 +5,7 @@ export const LEVEL_PADDING = 12
 
 export const getItemPadding = ( level:number,isFile:boolean)=>{
     console.log("level",level);
+    console.log("isFile",isFile);
     //file need extra padding since they dont have the chevron
     const fileOffset = isFile ? 16 : 0
     return BASE_PADDING+level*LEVEL_PADDING+fileOffset

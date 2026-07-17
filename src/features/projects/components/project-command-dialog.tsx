@@ -30,6 +30,7 @@ export const ProjectsCommandDialog = ({open,onOpenChange}:ProjectCommandDialogPr
 
      const handleSelect = (projectId:string)=>{
                router.push(`/projects/${projectId}`);
+               console.log("project null");
                onOpenChange(false)
      }
      return(
@@ -37,7 +38,7 @@ export const ProjectsCommandDialog = ({open,onOpenChange}:ProjectCommandDialogPr
             <CommandInput placeholder="search Projects..."/>
              <CommandList>
                 <CommandEmpty>No project found.</CommandEmpty>
-                <CommandGroup heading="projects">
+                <CommandGroup heading="projects">how it works  
                    {project?.map((project)=>(
                     <CommandItem key={project._id} value={`${project.name}-${project._id}`} onSelect={()=>handleSelect(project._id)}>
                        {getProjecticon(project)}
