@@ -10,7 +10,7 @@ const setSuggetionEffect = StateEffect.define<string|null>()
 //- update():called on every transaction (keystroke,etc) to potentially update the value
 const suggetionState = StateField.define<string|null>({
     create(){
-        return "TODO:create something"
+        return null;
     },
     update(value,transaction)
     {
@@ -46,10 +46,69 @@ class SuggestionWidget extends WidgetType{
    }
 }
 
+let debounceTimer:number|null = null;
+let isWaittingForSuggestion =  false;
+let DEBOUNCE_DELAY = 300
+
+const generateFakeSuggestion =(textBeforeCursor:string):string|null=>{
+   const trimmed = textBeforeCursor.trimEnd();
+   console.log("trimmed",trimmed);
+   if (trimmed.endsWith("const")) return " myVariable = "; 
+   if (trimmed.endsWith("function")) return " myFunction(){\n \n}"; 
+   if (trimmed.endsWith("console.")) return "log()"; 
+   if (trimmed.endsWith("return")) return "null";
+   return null; 
+}
 
 
+const createDebouncePlugin = (filname:string)=>{
+    return ViewPlugin.fromClass(
+        class{
+            constructor(view:EditorView){
+                this.triggerSuggestion(view)
+            }
 
+            update(update:ViewUpdate){
+                const shouldRebuild = update.docChanged || update.selectionSet
+                if (shouldRebuild) {
+                    this.triggerSuggestion(update.view)
+                }
+            }
 
+            triggerSuggestion(view:EditorView){
+                if (debounceTimer !== null) {
+                    clearTimeout(debounceTimer)
+                }
+
+                isWaittingForSuggestion=true
+
+                debounceTimer = window.setTimeout(async()=>{
+                    //Fake suggestion
+                    const cursor =view.state.selection.main.head;
+                    console.log("cursor",cursor);
+                    const line = view.state.doc.lineAt(cursor)
+                    console.log("line",line);
+                    const textBeforeCursor = line.text.slice(0,cursor - line.from)
+                    console.log("textBeforeCursor",textBeforeCursor);
+                    const suggestion = generateFakeSuggestion(textBeforeCursor)
+                    
+                    isWaittingForSuggestion = false;
+
+                    view.dispatch({
+                        effects:setSuggetionEffect.of(suggestion)
+                    })
+                },DEBOUNCE_DELAY)
+            }
+            
+            destroy(){
+                if (debounceTimer !== null) {
+                    clearTimeout(debounceTimer);
+                }
+            }
+        }
+
+    )
+}
 
 const renderPlugin = ViewPlugin.fromClass(
     class {
@@ -78,7 +137,9 @@ const renderPlugin = ViewPlugin.fromClass(
         }
 
         build(view:EditorView){
-            
+            if (isWaittingForSuggestion) {
+                return Decoration.none
+            }
             //get the current suggestion from state
             console.log("view",view);
             const suggetion = view.state.field(suggetionState)
@@ -129,6 +190,7 @@ const acceptSuggestionKeymap = keymap.of([
 export const suggestion = (fileName:string)=>{
    return [
        suggetionState, // our state storage
+       createDebouncePlugin(fileName),//Trigger siggestion on typing
        renderPlugin, // render the ghost texts
        acceptSuggestionKeymap, // Tab to accept
    ]
