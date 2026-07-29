@@ -10,6 +10,7 @@ import { FileSignal } from 'lucide-react'
 import { minimap } from '../extensions/minimap'
 import {indentationMarkers} from "@replit/codemirror-indentation-markers"
 import { customSetup } from '../extensions/custom-setup'
+import { suggestion } from '../extensions/suggestion'
 interface props{
   fileName:string,
   initialValue:string,
@@ -31,6 +32,7 @@ const CodeEditor = ({fileName,initialValue,onChange}:props) => {
           customTheme,
           customSetup,
           languageExtension,
+          suggestion(fileName),
           keymap.of([indentWithTab]),
           minimap(),
           indentationMarkers(),
