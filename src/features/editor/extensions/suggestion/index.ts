@@ -1,5 +1,6 @@
 import {StateEffect,StateField} from "@codemirror/state"
 import {Decoration,DecorationSet,EditorView,ViewPlugin,ViewUpdate,WidgetType,keymap}  from "@codemirror/view"
+import { fetcher } from "./fetcher"
 
 //setSuggetionEffect a way to send "message" to update state
 //we define one effect type for setting the suggestion text 
@@ -17,7 +18,7 @@ const suggetionState = StateField.define<string|null>({
         //check each effect in this transaction
         //if we find our setSuggetionefect , return its new value
         //otherwise ,keep the current value unchanged
-        console.log("transaction,value",transaction.effects,value);
+        console.log("transaction,value",transaction.effects , value);
         for(const effect of transaction.effects){ 
             if (effect.is(setSuggetionEffect)) {
                 return effect.value
@@ -50,6 +51,8 @@ let debounceTimer:number|null = null;
 let isWaittingForSuggestion =  false;
 let DEBOUNCE_DELAY = 300
 
+let currentAbortController:AbortController | null = null
+
 const generateFakeSuggestion =(textBeforeCursor:string):string|null=>{
    const trimmed = textBeforeCursor.trimEnd();
    console.log("trimmed",trimmed);
@@ -60,6 +63,69 @@ const generateFakeSuggestion =(textBeforeCursor:string):string|null=>{
    return null; 
 }
 
+const generatePayload = (view:EditorView,fileName:string)=>{
+    const code = view.state.doc.toString();
+    if (!code || code.trim().length ===0) {
+        return null
+    }
+
+    const cursorPosition = view.state.selection.main.head;
+    console.log("cursorPosition",cursorPosition);
+    
+    const currentLine = view.state.doc.lineAt(cursorPosition)
+    console.log("currentLine",currentLine);
+     console.log("currentLine",currentLine.number);
+     
+    const cursorInline = cursorPosition - currentLine.from;
+    console.log("cursorInline",cursorInline);
+
+    const previousLines:string[] = []
+
+    const previousLinesToFetch = Math.min(5,currentLine.number-1)
+    console.log("previousLinesToFetch",previousLinesToFetch);
+    
+    for(let i=previousLinesToFetch; i>=1;i--){
+        console.log("1",view.state.doc.line(currentLine.number-i));
+        console.log("2",view.state.doc.line(currentLine.number-i).text);
+        previousLines.push(view.state.doc.line(currentLine.number-i).text);
+    }
+    console.log("previousLines",previousLines);
+    
+
+    const nextLines:string[] = []
+    const totalLines = view.state.doc.line;
+    console.log("totalLines",totalLines);
+    const lineToFetch = Math.min(5,totalLines-currentLine.number)
+    for(let i=1; i<=lineToFetch;i++){
+        console.log("1",view.state.doc.line(currentLine.number+i));
+        console.log("2",view.state.doc.line(currentLine.number+i).text);
+        nextLines.push(view.state.doc.line(currentLine.number+i).text);
+    }
+    console.log("nextLines",nextLines);
+    console.log("code",code);
+    console.log("currentLine.text",currentLine.text);
+    console.log("previousLines.join",previousLines.join("\n"));
+    console.log("currentLine.text.slice(0,cursorInline)",currentLine.text.slice(0,cursorInline));
+    console.log("currentLine.text.slice(cursorInline)",currentLine.text.slice(cursorInline));
+    console.log("nextLines.join",nextLines.join("\n"));
+    console.log("currentLine.number",currentLine.number);
+     
+
+
+
+    return{
+        fileName,
+        code,
+        currentLine:currentLine.text,
+        PreviousLines:previousLines.join("\n"),
+        textBeforeCursor:currentLine.text.slice(0,cursorInline),
+        textAfterCursor:currentLine.text.slice(cursorInline),
+        nextLines:nextLines.join("\n"),
+        lineNumber:currentLine.number
+
+
+    }
+}
 
 const createDebouncePlugin = (filname:string)=>{
     return ViewPlugin.fromClass(
@@ -79,19 +145,33 @@ const createDebouncePlugin = (filname:string)=>{
                 if (debounceTimer !== null) {
                     clearTimeout(debounceTimer)
                 }
+                console.log("currentAbortController",currentAbortController);
+                
+
+                if (currentAbortController !== null) {
+                    console.log("aborted completed");
+                    currentAbortController.abort()
+                }
 
                 isWaittingForSuggestion=true
 
                 debounceTimer = window.setTimeout(async()=>{
-                    //Fake suggestion
-                    const cursor =view.state.selection.main.head;
-                    console.log("cursor",cursor);
-                    const line = view.state.doc.lineAt(cursor)
-                    console.log("line",line);
-                    const textBeforeCursor = line.text.slice(0,cursor - line.from)
-                    console.log("textBeforeCursor",textBeforeCursor);
-                    const suggestion = generateFakeSuggestion(textBeforeCursor)
-                    
+                    console.log("view",view)
+                   const payload = generatePayload(view,filname)
+                   console.log("payload",payload);
+                   
+                   if (!payload) {
+                    isWaittingForSuggestion = false
+                    view.dispatch({effects:setSuggetionEffect.of(null)})
+                    return;
+                   } 
+
+                   currentAbortController = new AbortController();
+                   console.log("currentAbortController1",currentAbortController);
+                   
+                   const suggestion = await fetcher(payload,currentAbortController.signal);
+                   console.log("suggestion",suggestion);
+                   
                     isWaittingForSuggestion = false;
 
                     view.dispatch({
@@ -101,8 +181,13 @@ const createDebouncePlugin = (filname:string)=>{
             }
             
             destroy(){
+                console.log("destroy",this.destroy);
                 if (debounceTimer !== null) {
                     clearTimeout(debounceTimer);
+                }
+
+                if (currentAbortController !== null) {
+                    currentAbortController.abort()
                 }
             }
         }

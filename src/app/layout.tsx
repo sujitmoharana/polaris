@@ -8,6 +8,7 @@ import {
 import {dark} from '@clerk/themes'
 import Providers from "@/components/provider";
 import { Authenticated } from "convex/react";
+import { Toaster } from "sonner";
 const inter = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -35,6 +36,7 @@ export default function RootLayout({
         className={`${inter.variable} ${plexMono.variable} antialiased`}
       >
           <Providers>
+            <Toaster/>
         {children}
         </Providers>
       </body>
