@@ -1,0 +1,20 @@
+import { useMutation, useQuery } from "convex/react"
+import { Id } from "../../../../convex/_generated/dataModel"
+import { api } from "../../../../convex/_generated/api"
+
+export const useConversation = (id:Id<"conversations">|null)=>{
+    return useQuery(api.conversations.getById,id?{id}:"skip")
+}
+
+export const useMessages = (conversationId:Id<"conversations"> | null)=>{
+    return useQuery(api.conversations.getMessages,conversationId?{conversationId}:"skip")
+}
+
+
+export const useConversations = (projectId:Id<"projects">)=>{
+  return useQuery(api.conversations.getByproject,{projectId})
+}
+export const useCreateConversations = ()=>{
+  return useMutation(api.conversations.create)
+}
+

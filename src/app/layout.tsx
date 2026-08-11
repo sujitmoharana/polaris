@@ -9,6 +9,7 @@ import {dark} from '@clerk/themes'
 import Providers from "@/components/provider";
 import { Authenticated } from "convex/react";
 import { Toaster } from "sonner";
+import "allotment/dist/style.css";
 const inter = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
