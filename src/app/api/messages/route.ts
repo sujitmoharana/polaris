@@ -23,7 +23,7 @@ export async function POST(request:Request){
     const body = await request.json();
     const {conversationId,message} = requestSchema.parse(body)
 
-    //call convex utation query
+    //call convex mutation query
     const conversation = await convex.query(api.system.getConversationId,{conversationId:conversationId as Id<"conversations">,internalKey:process.env.CONVEX_INTERNAL_KEY!})
 
     if (!conversation) {
@@ -31,6 +31,39 @@ export async function POST(request:Request){
     }
 
     const projectId = conversation.projectId
+    const internalkey = process.env.CONVEX_INTERNAL_KEY;
+
+    if (!internalkey) {
+      return NextResponse.json({error:"INternal key not configured"},{status:500})
+    }
+    const processingMessages = await convex.query(api.system.getProcessingMessages,{
+        internalKey:internalkey,
+        projectId:projectId as Id<"projects">
+      })
+
+      if (processingMessages.length === 0) {
+        return NextResponse.json({success:true,cancelled:false})
+      }
+
+      const cancelledIds = await Promise.all(
+        processingMessages.map(async(msg)=>{
+          await inngest.send({
+            name:"message/cancel",
+            data:{
+                messageId:msg._id
+            }
+          })
+    
+          await convex.mutation(api.system.updateMessageStatus,{
+            internalKey:internalkey,
+            messageId:msg._id,
+            status:"cancelled"
+           })
+    
+           return msg._id
+        })
+      )
+    
 
     await convex.mutation(api.system.createMessage,{
         internalkey:process.env.CONVEX_INTERNAL_KEY!,
@@ -53,7 +86,10 @@ export async function POST(request:Request){
     const event = await inngest.send({
         name:"message/sent",
         data:{
-            messageId:assistantMessageId
+            messageId:assistantMessageId,
+            conversationId:conversationId,
+            projectId:projectId,
+            message:message
         }
     })
 

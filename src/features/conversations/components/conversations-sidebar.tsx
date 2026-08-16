@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useConversation, useConversations, useCreateConversations, useMessages } from '../hooks/use-conversations'
 import { toast } from 'sonner'
 import ky from 'ky'
+import PastConversationDialog from './post-conversations'
 
 interface ConversationSideBarProps{
     projectId:Id<"projects">
@@ -16,6 +17,7 @@ interface ConversationSideBarProps{
 
 const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
     const [input,setInput] = useState("")
+    const [pastConversationsOpen,setpastConversationsOpen] = useState(false);
     const [selectConversationId,setSelectConversationId] = useState<Id<"conversations">|null>(null)
     const CreateConversation = useCreateConversations()
     console.log("CreateConversation1",CreateConversation);
@@ -32,6 +34,16 @@ const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
     const isprocessing = conversationMessages?.some((msg)=>{
          return msg.status ==="processing"
     }) 
+
+    const handleCancel = async ()=>{
+          try {
+            await ky.post("/api/messages/cancel",{
+                json:{projectId:projectId}
+            })
+          } catch (error) {
+            toast.error("unable to cancel request");
+          }
+    }
      console.log("isprocessing",isprocessing);
     const handlecreateConversation = async()=>{
         try {
@@ -54,6 +66,7 @@ const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
       //if processing and no new message,this is just a stop function
       if (isprocessing && !message.text) {
         //Todo:await handleecel()
+        await handleCancel()
         setInput("")
         return;
       }
@@ -81,13 +94,15 @@ const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
        setInput("")
     }
   return (
+  <>
+  <PastConversationDialog projectId={projectId} open={pastConversationsOpen} onOpenChange={setpastConversationsOpen} onSelect={setSelectConversationId} />
     <div className='flex flex-col h-full bg-sidebar'>
         <div className='h-8 flex items-center justify-between border-b'>
             <div className='text-sm truncate pl-3'>
                 {activeConversation?.title ?? DEFAULT_CONVERSATION_TITLE}
             </div>
             <div className='flex items-center px-1 gap-1'>
-               <Button variant="highlight" size="icon-xs">
+               <Button onClick={()=>setpastConversationsOpen(true)} variant="highlight" size="icon-xs">
                   <HistoryIcon className="size-3.5"/>
                </Button>
                <Button onClick={handlecreateConversation} variant="highlight" size="icon-xs">
@@ -106,6 +121,10 @@ const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
                                     <LoaderIcon className='size-4 animate-spin'/>
                                     <span>Thinking...</span>
                                 </div>
+                            ):message.status === "cancelled" ? (
+                                <span className='text-muted-foreground italic'>
+                                    requested cancelled
+                                </span>   
                             ):(
                                 <MessageResponse>
                                     {message.content}
@@ -142,6 +161,7 @@ const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
            </PromptInput>
         </div>
         </div>
+  </>
   )
 }
 
