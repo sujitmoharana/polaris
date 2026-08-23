@@ -4,13 +4,12 @@ import { Conversation,ConversationContent,ConversationScrollButton, } from '@/co
 import { Message,MessageContent,MessageResponse,MessageAction,MessageActions } from '@/components/ai-elements/message'
 import { PromptInput,PromptInputBody,PromptInputFooter,PromptInputSubmit,PromptInputTextarea,PromptInputTools,type PromptInputMessage } from '@/components/ai-elements/prompt-input'
 import { CopyCheck, CopyIcon,HistoryIcon,LoaderIcon,PlusIcon } from 'lucide-react'
-import { DEFAULT_CONVERSATION_TITLE } from '../../../../convex/constant'
 import { Button } from '@/components/ui/button'
 import { useConversation, useConversations, useCreateConversations, useMessages } from '../hooks/use-conversations'
 import { toast } from 'sonner'
 import ky from 'ky'
 import PastConversationDialog from './post-conversations'
-
+import { DEFAULT_CONVERSATION_TITLE } from '../constant'
 interface ConversationSideBarProps{
     projectId:Id<"projects">
 }
@@ -87,6 +86,8 @@ const ConversationSideBar = ({projectId}:ConversationSideBarProps) => {
                 message:message.text
             }
         })
+        console.log("sucess");
+        
       } catch (error) {
         console.log("errpr",error);
         toast.error("Message failed to send")

@@ -41,29 +41,28 @@ export async function POST(request:Request){
         projectId:projectId as Id<"projects">
       })
 
-      if (processingMessages.length === 0) {
-        return NextResponse.json({success:true,cancelled:false})
-      }
+      if (processingMessages.length > 0) {
 
-      const cancelledIds = await Promise.all(
-        processingMessages.map(async(msg)=>{
-          await inngest.send({
-            name:"message/cancel",
-            data:{
-                messageId:msg._id
-            }
+        const cancelledIds = await Promise.all(
+          processingMessages.map(async(msg)=>{
+            await inngest.send({
+              name:"message/cancel",
+              data:{
+                  messageId:msg._id
+              }
+            })
+      
+            await convex.mutation(api.system.updateMessageStatus,{
+              internalKey:internalkey,
+              messageId:msg._id,
+              status:"cancelled"
+             })
+      
+             return msg._id
           })
+        )
     
-          await convex.mutation(api.system.updateMessageStatus,{
-            internalKey:internalkey,
-            messageId:msg._id,
-            status:"cancelled"
-           })
-    
-           return msg._id
-        })
-      )
-    
+      }
 
     await convex.mutation(api.system.createMessage,{
         internalkey:process.env.CONVEX_INTERNAL_KEY!,
