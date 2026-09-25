@@ -344,11 +344,11 @@ export const rename = mutation({
 
 export const deleteFile = mutation({
     args:{
-        internalkey:v.string(),
+        internalKey:v.string(),
        fileId:v.id("files")
     },
     handler:async(ctx,args)=>{
-        validateinternalKey(args.internalkey)
+        validateinternalKey(args.internalKey)
        const file = await ctx.db.get("files",args.fileId)
        if(!file) throw new Error("file not found");
      

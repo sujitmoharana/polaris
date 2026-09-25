@@ -5,7 +5,15 @@ import { convex } from "@/lib/convex-client";
 import { api } from "../../../../convex/_generated/api";
 import { CODING_AGENT_SYSTEM_PROMPT, TITLE_GENERATOR_SYSTEM_PROMPT } from "./constant";
 import { DEFAULT_CONVERSATION_TITLE } from "../constant";
-import { createAgent, openai } from '@inngest/agent-kit';
+import { createAgent, createNetwork, openai } from '@inngest/agent-kit';
+import { createReadFilesTool } from "./tools/read-files";
+import { createListFilesTool } from "./tools/list-files";
+import { createUpdateFileTool } from "./tools/update-file";
+import { createFileTool } from "./tools/create-files";
+import { createFolderTool } from "./tools/create-folder";
+import { createRenameFileTool } from "./tools/rename-file";
+import { createDeleteFileTool } from "./tools/delete-files";
+import { createScrapeUrlsTool } from "./tools/scrape-urls";
 
 interface MessageEvent {
     messageId:Id<"messages">,
@@ -119,12 +127,78 @@ export const processMessage = inngest.createFunction(
         }
       }
 
+      const codingAgent  = createAgent({
+        name:"polaris",
+        description:"An expert AI coding assistant",
+        system:systemprompt,
+        model:openai({
+          model:"gpt-4.1"
+        }),
+        tools:[
+          createListFilesTool({internalKey,projectId}),
+          createReadFilesTool({internalKey}),
+          createUpdateFileTool({internalKey}),
+          createFileTool({projectId,internalKey}),
+          createFolderTool({projectId,internalKey}),
+          createRenameFileTool({internalKey}),
+          createDeleteFileTool({internalKey}),
+          createScrapeUrlsTool()
+        ],
+      })
+
+      // create network with single Agent
+
+      const network = createNetwork({
+        name:"polaris-network",
+        agents:[codingAgent],
+        maxIter:20,
+        router:({network})=>{
+         const lastresult = network.state.results.at(-1);
+         console.log("lastresult",lastresult);
+         const hasTextResponse = lastresult?.output.some((m)=> m.type === "text" && m.role ==="assistant")
+         console.log("hastextresopnse",hasTextResponse);
+         const hasToolCalls = lastresult?.output.some((m)=>m.type === "tool_call")
+         console.log("hastoolcall",hasToolCalls);
+          
+         //anthropic output text nad toolcall together
+         //only stop if there itext wothout toolcall (final response)
+         if (hasTextResponse && !hasToolCalls) {
+          return undefined;
+         }
+
+         return codingAgent;
+        }
+      })
+
+      //run the agent
+      const result = await network.run(message);
+      console.log("result",result);
+      
+      //Extract the assistant text response from the last agent results
+
+      const lastResult = result.state.results.at(-1);
+      console.log("lastresult",lastResult);
+
+      const textMessage = lastResult?.output.find((m)=> m.type === "text" && m.role ==="assistant")
+      console.log("textmessage",textMessage);
+      
+
+      let assistantResoponse = "I process your request . Let me know if you need anything else"
+
+      
+      if (textMessage?.type === "text") {
+         assistantResoponse = typeof textMessage.content === "string" ? textMessage.content.trim() : textMessage.content.map((c)=>c.text).join("").trim()
+      }
+
+
       await step.run("update-assistant-message", async () => {
         await convex.mutation(api.system.updateMessageContent, {
           messageId,
           internalKey,
-          content: "AI processed this message",
+          content:assistantResoponse,
         });
       });
+
+      return {sucess:true,messageId,conversationId}
     }
   );
